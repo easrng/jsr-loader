@@ -1,0 +1,16 @@
+{
+  "name": "@easrng/jsr-loader",
+  "version": "0.0.1",
+  "exports": "./mod.js",
+  "publish": {
+    "include": ["./mod.js", "./mod.d.ts"]
+  },
+  "license": "SEE LICENSE IN be gay do crime",
+
+  "tasks": {
+    "serve": "cp mod.js example/jsr-loader.js && cd example && deno run --allow-net --allow-read=. jsr:@std/http/file-server"
+  },
+  "compilerOptions": {
+    "lib": ["deno.window", "dom"]
+  }
+}

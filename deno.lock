@@ -1,0 +1,39 @@
+{
+  "version": "4",
+  "specifiers": {
+    "jsr:@luca/flag@*": "1.0.1",
+    "jsr:@std/bytes@^1.0.4": "1.0.4",
+    "jsr:@std/bytes@^1.0.5": "1.0.5",
+    "jsr:@std/cbor@*": "0.1.6",
+    "jsr:@std/encoding@*": "1.0.7",
+    "jsr:@std/streams@*": "1.0.9",
+    "jsr:@std/streams@^1.0.8": "1.0.9"
+  },
+  "jsr": {
+    "@luca/flag@1.0.1": {
+      "integrity": "dce7eb4159b1bdb1606fe05c2e5388dcff5ae3b0b84184b934bc623143742408"
+    },
+    "@std/bytes@1.0.4": {
+      "integrity": "11a0debe522707c95c7b7ef89b478c13fb1583a7cfb9a85674cd2cc2e3a28abc"
+    },
+    "@std/bytes@1.0.5": {
+      "integrity": "4465dd739d7963d964c809202ebea6d5c6b8e3829ef25c6a224290fbb8a1021e"
+    },
+    "@std/cbor@0.1.6": {
+      "integrity": "3fb6e082f4eb44fc0c8d042999471264d398e6abb96c791c4e41614f9f52df44",
+      "dependencies": [
+        "jsr:@std/bytes@^1.0.4",
+        "jsr:@std/streams@^1.0.8"
+      ]
+    },
+    "@std/encoding@1.0.7": {
+      "integrity": "f631247c1698fef289f2de9e2a33d571e46133b38d042905e3eac3715030a82d"
+    },
+    "@std/streams@1.0.9": {
+      "integrity": "a9d26b1988cdd7aa7b1f4b51e1c36c1557f3f252880fa6cc5b9f37078b1a5035",
+      "dependencies": [
+        "jsr:@std/bytes@^1.0.5"
+      ]
+    }
+  }
+}
