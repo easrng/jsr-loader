@@ -97,7 +97,7 @@ const fsMap = await createDefaultMapFromCDN(
 );
 fsMap.set(
   "/any.ts",
-  "export let{createSystem,createVirtualTypeScriptEnvironment,basicSetup,EditorView,tsAutocomplete,tsFacet,tsHover,tsLinter,tsSync,autocompletion,javascript,createWorker,ScriptTarget,JsxEmit,ModuleKind,ModuleResolutionKind,version}=0 as any;export type CompilerOptions=any",
+  "export let{createDefaultMapFromCDN,createSystem,createVirtualTypeScriptEnvironment,basicSetup,EditorView,tsAutocomplete,tsFacet,tsHover,tsLinter,tsSync,autocompletion,javascript,createWorker,ScriptTarget,JsxEmit,ModuleKind,ModuleResolutionKind,version}=0 as any;export type CompilerOptions=any",
 );
 await Promise.all(
   jsrDeps
