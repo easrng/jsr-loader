@@ -2,17 +2,17 @@
 /* @ts-self-types="./mod.d.ts" */
 
 const deps = {
-  // for npm: specifiers
-  npmCdn: "https://esm.sh/",
+  // for npm: and jsr:@npm/ specifiers
+  npmJsr: "https://npm2jsr.easrng.net",
 
   // jsr instance
   jsr: "https://jsr.io",
 
   // specific js files
   esms:
-    "https://cdn.jsdelivr.net/npm/es-module-shims@2.0.9/dist/es-module-shims.js",
-  amaro: "https://cdn.jsdelivr.net/npm/amaro@0.3.1/dist/index.js",
-  semver: "https://jsr.io/@std/semver/1.0.3",
+    "https://cdn.jsdelivr.net/npm/es-module-shims@2.0.10/dist/es-module-shims.js",
+  amaro: "https://cdn.jsdelivr.net/npm/amaro@0.4.0/dist/index.js",
+  semver: "https://jsr.io/@std/semver/1.0.4",
 };
 
 const jsrImportPromise = (async () => {
@@ -53,11 +53,8 @@ const jsrImportPromise = (async () => {
     element: T,
     comparator: (a: T, b: T) => number,
   ) => void} */
-  function insertSorted(
-    array,
-    element,
-    comparator,
-  ) {
+
+  function insertSorted(array, element, comparator) {
     let value, i;
     for (
       i = 0;
@@ -70,12 +67,32 @@ const jsrImportPromise = (async () => {
     array.splice(i, 0, element);
   }
 
-  const mod = /** @type {ESMS} */ (/** @type {Partial<ESMS>} */ ({
-    __proto__: globalThis,
-    esmsInitOptions: {
-      tsTransform: URL.createObjectURL(
-        new Blob([
-          `
+  /**
+   * @param {string} pkg
+   */
+  function encodePackageName(pkg) {
+    const match = pkg.match(/^@([^@\/]*)\/([^@\/]*)$|^([^@\/]*)$/);
+    if (!match) throw new TypeError("invalid package name");
+    if (match[3]) {
+      if (match[3].includes("__")) {
+        throw new TypeError("can't encode package name unambiguously");
+      }
+      return match[3];
+    }
+    if (match[1].includes("__")) {
+      throw new TypeError("can't encode scope name unambiguously");
+    }
+    return `${match[1]}__${match[2]}`;
+  }
+
+  const mod = /** @type {ESMS} */ (
+    /** @type {Partial<ESMS>} */ ({
+      __proto__: globalThis,
+      esmsInitOptions: {
+        tsTransform: URL.createObjectURL(
+          new Blob(
+            [
+              `
             const module = {};
             function require(mod) {
               switch (mod) {
@@ -84,9 +101,12 @@ const jsrImportPromise = (async () => {
                 default: throw new Error('No impl for ' + mod);
               }
             }
-          `.replace(/^ {12}/gm, "").trim() + "\n\n",
-          await (await fetch(deps.amaro)).blob(),
-          "\n" + `
+          `
+                .replace(/^ {12}/gm, "")
+                .trim() + "\n\n",
+              await (await fetch(deps.amaro)).blob(),
+              "\n" +
+              `
             const amaroTransformSync = module.exports.transformSync;
             export function transform(source, url) {
               try {
@@ -99,37 +119,45 @@ const jsrImportPromise = (async () => {
                 throw new SyntaxError(e.message.replace(',-', url + ' - '));
               }
             }
-          `.replace(/^ {12}/gm, "").trim(),
-        ], { type: "text/javascript" }),
-      ),
-      shimMode: true,
-      resolve(id, base, next) {
-        if (id.startsWith("npm:")) {
-          return deps.npmCdn + id.slice("npm:".length);
-        }
-        if (id.startsWith("jsr:")) {
-          return jsrResolve(id);
-        }
-        return next(id, base);
+          `
+                .replace(/^ {12}/gm, "")
+                .trim(),
+            ],
+            { type: "text/javascript" },
+          ),
+        ),
+        shimMode: true,
+        resolve(id, base, next) {
+          if (id.startsWith("npm:")) {
+            const pkg = id.match(/^npm:(@[^\/@]+\/[^\/@]+|[^@][^\/@]*)/);
+            if (!pkg) throw new Error("invalid npm specifier");
+            id = "jsr:@npm/" + encodePackageName(pkg[1]) +
+              id.slice(pkg[0].length);
+          }
+          if (id.startsWith("jsr:")) {
+            return jsrResolve(id);
+          }
+          return next(id, base);
+        },
       },
-    },
-  }));
+    })
+  );
   new Function(
     "self",
-    "document",
     (await (await fetch(deps.esms)).text())
       .replace(/resolved\.r/g, "await resolved.r")
       .replace("({ n, d, t, a }) =>", "async ({ n, d, t, a }) =>")
       .replace("load.d = load.a[0]", "load.d = (await Promise.all(load.a[0]")
       .replace(".filter(l => l)", ")).filter(l => l)")
-      .replace(/(`.*)importShim/g, "$1globalThis[Symbol.for('jsrImport.1')]"),
+      .replace(/(`.*)importShim/g, "$1globalThis[Symbol.for('jsrImport.1')]")
+      .replace(
+        /pushStringTo\(statementStart \+ 6\);\s+resolvedSource \+= `Shim/,
+        "pushStringTo(statementStart);\nresolvedSource += `globalThis[Symbol.for('jsrImport.1')]",
+      ),
   )(mod);
   const { importShim } = mod;
   Object.defineProperty(globalThis, Symbol.for("jsrImport.1"), {
-    value: {
-      _s: /** @type {any} */ (importShim)._s,
-      _r: /** @type {any} */ (importShim)._r,
-    },
+    value: importShim,
     configurable: true,
     enumerable: false,
     writable: false,
@@ -152,7 +180,8 @@ const jsrImportPromise = (async () => {
       /^jsr:(@[^\/@]+\/[^\/@]+|[^\/@]+)(?:@([^\/@]+))?(\/.*)?$/,
     );
     if (!match) throw new TypeError("invalid JSR specifier");
-    const [, name, rawVersion, subpath] = match;
+    const [, name, rawVersion, rawSubpath] = match;
+    const jsrInstance = name.startsWith("@npm/") ? deps.npmJsr : deps.jsr;
     const version = semver.parseRange(rawVersion || "*");
     let activeVersions = versionsMap.get(name);
     if (!activeVersions) {
@@ -170,15 +199,19 @@ const jsrImportPromise = (async () => {
       if (!versionMetaPromise) {
         versionMetaPromise = (async () =>
           await (
-            await fetch(`${deps.jsr}/${name}/${version[1]}_meta.json`)
+            await fetch(`${jsrInstance}/${name}/${version[1]}_meta.json`)
           ).json())();
         packageMetaCache.set(pkg, versionMetaPromise);
       }
       const versionMeta = await versionMetaPromise;
-      return new URL(
-        versionMeta.exports["." + (subpath || "")],
-        `${deps.jsr}/${name}/${version[1]}/`,
-      ).href;
+      const subpath = "." + (rawSubpath || "");
+      const resolved = versionMeta.exports[subpath];
+      if (!resolved) {
+        throw new Error(
+          `subpath '${subpath}' is not exported from package '${pkg}'`,
+        );
+      }
+      return new URL(resolved, `${jsrInstance}/${name}/${version[1]}/`).href;
     }
     const existingVersion = version &&
       activeVersions?.find((e) => semver.satisfies(e[0], version));
@@ -188,7 +221,7 @@ const jsrImportPromise = (async () => {
     let packageMetaPromise = packageMetaCache.get(name);
     if (!packageMetaPromise) {
       packageMetaPromise = (async () =>
-        await (await fetch(`${deps.jsr}/${name}/meta.json`)).json())();
+        await (await fetch(`${jsrInstance}/${name}/meta.json`)).json())();
       packageMetaCache.set(name, packageMetaPromise);
     }
     const packageMeta = await packageMetaPromise;
@@ -198,10 +231,9 @@ const jsrImportPromise = (async () => {
     /** @type {[SemVer, string][]} */
     const yankedVersions = [];
     for (
-      const [k, v]
-        of /** @type {[ string, { yanked?: boolean } ][]} */ (Object.entries(
-          packageMeta.versions,
-        ))
+      const [k, v] of /** @type {[ string, { yanked?: boolean } ][]} */ (
+        Object.entries(packageMeta.versions)
+      )
     ) {
       if (v.yanked) {
         yankedVersions.push([semver.parse(k), k]);
