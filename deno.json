@@ -8,7 +8,7 @@
   "license": "SEE LICENSE IN be gay do crime",
 
   "tasks": {
-    "serve": "cp mod.js example/jsr-loader.js && cd example && deno run --allow-net --allow-read=. jsr:@std/http/file-server"
+    "serve": "cp mod.js example/jsr-loader.js && cp babel-ts-standalone.js example/babel-ts-standalone.js && cd example && deno run --allow-net --allow-read=. jsr:@std/http/file-server"
   },
   "compilerOptions": {
     "lib": ["deno.window", "dom"]

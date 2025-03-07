@@ -34,10 +34,11 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - run: cp mod.js example/jsr-loader.js
+      - run: cp babel-ts-standalone.js example/babel-ts-standalone.js
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: 'example'
+          path: "example"
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4

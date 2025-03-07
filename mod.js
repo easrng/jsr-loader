@@ -11,7 +11,6 @@ const deps = {
   // specific js files
   esms:
     "https://cdn.jsdelivr.net/npm/es-module-shims@2.0.10/dist/es-module-shims.js",
-  amaro: "https://cdn.jsdelivr.net/npm/amaro@0.4.0/dist/index.js",
   semver: "https://jsr.io/@std/semver/1.0.4",
 };
 
@@ -89,43 +88,7 @@ const jsrImportPromise = (async () => {
     /** @type {Partial<ESMS>} */ ({
       __proto__: globalThis,
       esmsInitOptions: {
-        tsTransform: URL.createObjectURL(
-          new Blob(
-            [
-              `
-            const module = {};
-            function require(mod) {
-              switch (mod) {
-                case 'util': return { TextEncoder, TextDecoder };
-                case 'node:buffer': return { Buffer: { from: function (a) { return Uint8Array.from(atob(a), (x) => x.charCodeAt(0)); } } };
-                default: throw new Error('No impl for ' + mod);
-              }
-            }
-          `
-                .replace(/^ {12}/gm, "")
-                .trim() + "\n\n",
-              await (await fetch(deps.amaro)).blob(),
-              "\n" +
-              `
-            const amaroTransformSync = module.exports.transformSync;
-            export function transform(source, url) {
-              try {
-                const transformed = amaroTransformSync(source, { mode: 'transform', filename: url, transform: { noEmptyExport: true } }).code;
-                // Importantly, return undefined when there is no work to do
-                if (transformed !== source)
-                  return transformed;
-              } catch (e) {
-                // This is needed pending figuring out why filename option above isn't working
-                throw new SyntaxError(e.message.replace(',-', url + ' - '));
-              }
-            }
-          `
-                .replace(/^ {12}/gm, "")
-                .trim(),
-            ],
-            { type: "text/javascript" },
-          ),
-        ),
+        tsTransform: new URL("babel-ts-standalone.js", import.meta.url).href,
         shimMode: true,
         resolve(id, base, next) {
           if (id.startsWith("npm:")) {
