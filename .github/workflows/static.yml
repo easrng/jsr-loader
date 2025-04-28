@@ -34,7 +34,7 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - run: cp mod.js example/jsr-loader.js
-      - run: cp babel-ts-standalone.js example/babel-ts-standalone.js
+      - run: cp tstrip.js example/tstrip.js
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:

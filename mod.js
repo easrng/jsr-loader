@@ -10,7 +10,7 @@ const deps = {
 
   // specific js files
   esms:
-    "https://cdn.jsdelivr.net/npm/es-module-shims@2.0.10/dist/es-module-shims.js",
+    "https://cdn.jsdelivr.net/npm/es-module-shims@2.4.0/dist/es-module-shims.wasm.js",
   semver: "https://jsr.io/@std/semver/1.0.4",
 };
 
@@ -88,7 +88,7 @@ const jsrImportPromise = (async () => {
     /** @type {Partial<ESMS>} */ ({
       __proto__: globalThis,
       esmsInitOptions: {
-        tsTransform: new URL("babel-ts-standalone.js", import.meta.url).href,
+        tsTransform: new URL("tstrip.js", import.meta.url).href,
         shimMode: true,
         resolve(id, base, next) {
           if (id.startsWith("npm:")) {
@@ -109,13 +109,18 @@ const jsrImportPromise = (async () => {
     "self",
     (await (await fetch(deps.esms)).text())
       .replace(/resolved\.r/g, "await resolved.r")
-      .replace("({ n, d, t, a }) =>", "async ({ n, d, t, a }) =>")
+      .replace("const url = resolve", "const url = await resolve")
+      .replace(
+        "url = (await resolve(url, parentUrl)).r",
+        "url = await (await resolve(url, parentUrl)).r",
+      )
+      .replace("({ n, d, t, a, se }) =>", "async ({ n, d, t, a, se }) =>")
       .replace("load.d = load.a[0]", "load.d = (await Promise.all(load.a[0]")
       .replace(".filter(l => l)", ")).filter(l => l)")
       .replace(/(`.*)importShim/g, "$1globalThis[Symbol.for('jsrImport.1')]")
       .replace(
-        /pushStringTo\(statementStart \+ 6\);\s+resolvedSource \+= `Shim/,
-        "pushStringTo(statementStart);\nresolvedSource += `globalThis[Symbol.for('jsrImport.1')]",
+        /pushStringTo\(load, statementStart \+ 6, dynamicImportEndStack\);\s+resolvedSource \+= `Shim/,
+        "pushStringTo(load, statementStart, dynamicImportEndStack);\nresolvedSource += `globalThis[Symbol.for('jsrImport.1')]",
       ),
   )(mod);
   const { importShim } = mod;
